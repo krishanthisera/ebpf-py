@@ -3,6 +3,7 @@ from bcc import BPF
 import ctypes as ct
 
 program = r"""
+#pragma clang diagnostic ignored "-Wint-conversion"
 BPF_PROG_ARRAY(syscall, 300);
 
 int hello(struct bpf_raw_tracepoint_args *ctx) {
