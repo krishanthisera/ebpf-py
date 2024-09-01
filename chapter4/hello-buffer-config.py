@@ -5,7 +5,7 @@ import ctypes as ct
 
 program = r"""
 struct user_msg_t {
-   char message[12];
+   char msg[12];
 };
 
 BPF_HASH(config, u32, struct user_msg_t);
@@ -16,13 +16,13 @@ struct data_t {
    int pid;
    int uid;
    char command[16];
-   char message[12];
+   char msg[12];
 };
 
 int hello(void *ctx) {
    struct data_t data = {}; 
    struct user_msg_t *p;
-   char message[12] = "Hello World";
+   char msg[12] = "Hello World";
 
    data.pid = bpf_get_current_pid_tgid() >> 32;
    data.uid = bpf_get_current_uid_gid() & 0xFFFFFFFF;
@@ -31,9 +31,9 @@ int hello(void *ctx) {
 
    p = config.lookup(&data.uid);
    if (p != 0) {
-      bpf_probe_read_kernel(&data.message, sizeof(data.message), p->message);       
+      bpf_probe_read_kernel(&data.msg, sizeof(data.msg), p->msg);       
    } else {
-      bpf_probe_read_kernel(&data.message, sizeof(data.message), message); 
+      bpf_probe_read_kernel(&data.msg, sizeof(data.msg), msg); 
    }
 
    output.perf_submit(ctx, &data, sizeof(data)); 
@@ -44,13 +44,16 @@ int hello(void *ctx) {
 
 b = BPF(text=program) 
 syscall = b.get_syscall_fnname("execve")
-b.attach_kprobe(event=syscall, fn_name="hello")
+# b.attach_kprobe(event=syscall, fn_name="hello")
+# Attaching to raw tracepoint
+b.attach_raw_tracepoint(tp="sys_enter", fn_name="hello")
 b["config"][ct.c_int(0)] = ct.create_string_buffer(b"Hey root!")
 b["config"][ct.c_int(501)] = ct.create_string_buffer(b"Hi user 501!")
+
  
 def print_event(cpu, data, size):  
    data = b["output"].event(data)
-   print(f"{data.pid} {data.uid} {data.command.decode()} {data.message.decode()}")
+   # print(f"{data.pid} {data.uid} {data.command.decode()} {data.msg.decode()}")
  
 b["output"].open_perf_buffer(print_event) 
 while True:   
