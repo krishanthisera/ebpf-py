@@ -24,6 +24,11 @@ struct {
 } my_config SEC(".maps");
 
 SEC("ksyscall/execve")
+/**
+ * The ctx variable does exist, hidden within the BPF_KPROBE_SYSCALL macro definition inside bpf/bpf_tracing.h, 
+ *  in libbpf, where you’ll also find some commentary about this. It can be slightly confusing to use a 
+ *  variable that’s not visibly defined, but it’s very helpful that it can be accessed.
+ */
 int BPF_KPROBE_SYSCALL(hello, const char *pathname)
 {
    struct data_t data = {}; 
