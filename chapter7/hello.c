@@ -63,13 +63,24 @@ int main()
 		return 1;
 	}
 
-	// Attach the progams to the events
-	err = hello_bpf__attach(skel);
-	if (err) {
-		fprintf(stderr, "Failed to attach BPF skeleton: %d\n", err);
+	// Attch selected programs
+	struct bpf_program *prog;
+	const char *prog_name = "kprobe_sys_execve";
+	prog = bpf_object__find_program_by_name(skel->obj, prog_name);
+
+	if (!prog) {
+		fprintf(stderr, "Failed to find program %s\n", prog_name);
 		hello_bpf__destroy(skel);
-        return 1;
+		return 1;
 	}
+
+	// // Attach the progams to the events
+	// err = hello_bpf__attach(skel);
+	// if (err) {
+	// 	fprintf(stderr, "Failed to attach BPF skeleton: %d\n", err);
+	// 	hello_bpf__destroy(skel);
+  //       return 1;
+	// }
 
 	pb = perf_buffer__new(bpf_map__fd(skel->maps.output), 8, handle_event, lost_event, NULL, NULL);
 	if (!pb) {
